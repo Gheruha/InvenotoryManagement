@@ -18,46 +18,8 @@ public class Food extends Item {
     static String output;
     static ResultSet result; // holds the result from SQL
 
-    // CONNECT TO DATABASE
-    private static Connection connectToDatabase() throws SQLException, ClassNotFoundException {
-        // URL for database:
-        String dbURL = "jdbc:mysql://localhost:3306/inventory";
-
-        return DriverManager.getConnection(dbURL, "root", "");
-    }
-
-    // EXECUTE UPDATE
-    private static int executeUpdate(String query, Object... parameters)
-            throws SQLException, ClassNotFoundException {
-        try (Connection connection = connectToDatabase();
-                PreparedStatement statement = connection.prepareStatement(query)) {
-
-            // Put the parameters in the statement:
-            for (int i = 0; i < parameters.length; i++) {
-                statement.setObject(i + 1, parameters[i]);
-            }
-
-            return statement.executeUpdate();
-        }
-    }
-
-    // EXECUTE QUERY AND RETURN RESULT
-    private static ResultSet executeQuery(String query, Object... parameters)
-            throws SQLException, ClassNotFoundException {
-        try (Connection connection = connectToDatabase();
-                PreparedStatement statement = connection.prepareStatement(query)) {
-
-            // Put the parameters in the statement:
-            for (int i = 0; i < parameters.length; i++) {
-                statement.setObject(i + 1, parameters[i]);
-            }
-
-            // Execute query and return the result set
-            return statement.executeQuery();
-        }
-    }
-
-    // ADD FOOD
+    // =================================== ADD FOOD IN THE DATABASE
+    // ===================================
     public static void addFood() throws ClassNotFoundException {
         String insertFoodQuery = "insert into food(id, name, quantity, price, quantityMeasure) values (? , ? , ? , ? , ?)";
         String quantityMeasure = "g";
@@ -87,9 +49,10 @@ public class Food extends Item {
                 int result = executeUpdate(insertFoodQuery, foodId, foodName, quantity, price, quantityMeasure);
 
                 if (result > 0) {
-                    System.out.println("Food added successfully!");
+                    System.out.println("     Food added successfully!");
+
                 } else {
-                    System.out.println("Failed to add food.");
+                    System.out.println("     Failed to add food.");
                 }
             }
         } catch (SQLException e) {
@@ -98,28 +61,34 @@ public class Food extends Item {
 
     }
 
-    // SEE FOOD
+    // =================================== SEE FOOD FROM DATABASE
+    // ===================================
     public static void seeFood() throws SQLException, ClassNotFoundException {
         String selectAll = "select * from food;";
 
         System.out.println(
                 "-------------------------------------------------------------------------------------");
-        System.out.println("                                  FOOD LIST\n\n");
-        while (result.next()) {
-            ResultSet result = executeQuery(selectAll);
-            int dataId = result.getInt("id");
-            String dataName = result.getString("name");
-            int dataQuantity = result.getInt("quantity");
-            double dataPrice = result.getInt("price");
-            String dataQuantityMeasure = result.getString("quantityMeasure");
+        try (
+                ResultSet result = executeTheQuery(selectAll)) {
 
-            System.out.println(
-                    dataId + " " + dataName + " " + dataQuantity + " " + dataPrice + " " + dataQuantityMeasure);
+            System.out.println("                                  FOOD LIST\n\n");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
+
+                System.out.println(
+                        dataId + " " + dataName + " " + dataQuantity + " " + dataPrice + " " + dataQuantityMeasure);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        result.close();
     }
 
-    // CHANGE FOOD QUANTITY
+    // =================================== CHANGE FOOD QUANTITY
+    // ===================================
     public static void changeFoodQuantity() {
         System.out.println(
                 "-------------------------------------------------------------------------------------");
@@ -164,7 +133,8 @@ public class Food extends Item {
         }
     }
 
-    // CHANGE FOOD PRICE
+    // =================================== CHANGE FOOD PRICE
+    // ===================================
     public static void changeFoodPrice() {
         System.out.println(
                 "-------------------------------------------------------------------------------------");
@@ -200,6 +170,8 @@ public class Food extends Item {
         }
     }
 
+    // =================================== DELETE FOOD
+    // ===================================
     public static void deleteFood() {
         System.out.println(
                 "-------------------------------------------------------------------------------------");

@@ -1,3 +1,9 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class Item {
 
     // Private characteristcs of the items.
@@ -6,8 +12,6 @@ public class Item {
     private int quantity;
     private double price;
     private String quantityMeasure;
-
-    
 
     // CONSTRUCTOR
     Item(int id, String name, int quantity, double price, String quantityMeasure) {
@@ -18,7 +22,7 @@ public class Item {
         this.set_quanittyMeasure(quantityMeasure);
     }
 
-    // GETTERS
+// =================================== GETTERS ===================================
     public int get_id() {
         return id;
     }
@@ -39,7 +43,7 @@ public class Item {
         return quantityMeasure;
     }
 
-    // SETTERS
+// =================================== SETTERS ===================================
     public void set_id(int id) {
         this.id = id;
     }
@@ -72,5 +76,46 @@ public class Item {
     public void change_price(double newPrice) {
         price = newPrice;
     }
-    
+
+// =================================== CONNECT TO DATABASE ===================================
+    public static Connection connectToDatabase() throws SQLException, ClassNotFoundException {
+        // URL for database:
+        String dbURL = "jdbc:mysql://localhost:3306/inventory";
+
+        return DriverManager.getConnection(dbURL, "root", "");
+    }
+
+// =================================== EXECUTE UPDATE TO DATABASE ===================================
+    public static int executeUpdate(String query, Object... parameters)
+            throws SQLException, ClassNotFoundException {
+        try (Connection connection = connectToDatabase();
+                PreparedStatement statement = connection.prepareStatement(query)) {
+
+            // Put the parameters in the statement:
+            for (int i = 0; i < parameters.length; i++) {
+                statement.setObject(i + 1, parameters[i]);
+            }
+
+            return statement.executeUpdate();
+        }
+    }
+
+// =================================== EXECUTE MYSQL QUERY ===================================
+    public static ResultSet executeTheQuery(String query, Object... parameters)
+            throws SQLException, ClassNotFoundException {
+        try {
+            Connection connection = connectToDatabase();
+            PreparedStatement statement = connection.prepareStatement(query);
+            // Put the parameters in the statement:
+            for (int i = 0; i < parameters.length; i++) {
+                statement.setObject(i + 1, parameters[i]);
+            }
+
+            // Execute query and return the result set
+            return statement.executeQuery();
+        } finally {
+
+        }
+
+    }
 }
