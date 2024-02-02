@@ -18,8 +18,8 @@ public class Food extends Item {
     static String output;
     static ResultSet result; // holds the result from SQL
 
-    // =================================== ADD FOOD IN THE DATABASE
-    // ===================================
+    // ========================= ADD FOOD IN THE DATABASE =========================
+
     public static void addFood() throws ClassNotFoundException {
         String insertFoodQuery = "insert into food(id, name, quantity, price, quantityMeasure) values (? , ? , ? , ? , ?)";
         String quantityMeasure = "g";
@@ -61,8 +61,7 @@ public class Food extends Item {
 
     }
 
-    // =================================== SEE FOOD FROM DATABASE
-    // ===================================
+    // ========================= SEE FOOD FROM DATABASE =========================
     public static void seeFood() throws SQLException, ClassNotFoundException {
         String selectAll = "select * from food;";
 
@@ -72,6 +71,7 @@ public class Food extends Item {
                 ResultSet result = executeTheQuery(selectAll)) {
 
             System.out.println("                                  FOOD LIST\n\n");
+            System.out.printf("%-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
             while (result.next()) {
                 int dataId = result.getInt("id");
                 String dataName = result.getString("name");
@@ -79,128 +79,172 @@ public class Food extends Item {
                 double dataPrice = result.getInt("price");
                 String dataQuantityMeasure = result.getString("quantityMeasure");
 
-                System.out.println(
-                        dataId + " " + dataName + " " + dataQuantity + " " + dataPrice + " " + dataQuantityMeasure);
+                System.out.printf("%-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    // =================================== CHANGE FOOD QUANTITY
-    // ===================================
-    public static void changeFoodQuantity() {
-        System.out.println(
-                "-------------------------------------------------------------------------------------");
+    // ========================= CHANGE FOOD QUANTITY =========================
+    public static void changeFoodQuantity() throws ClassNotFoundException {
+        System.out.println("-------------------------------------------------------------------------------------");
         System.out.println("                     CHANGE QUANTITY FOOD\n\n");
         System.out.print("     Enter the ID of the food item whose quantity you want to change: ");
+
         int foodId = scanner.nextInt();
+        int quantity = 0; // Initialize quantity
+        String query = "select * from food where id = ?";
+        String changeQuantityQuery = "update food set quantity = ? where id = ?";
 
-        // FIND FOOD ITEM , ADD OR DELETE
-        for (Food food : foodList) {
-            if (food.get_id() == foodId) {
-                while (true) {
-                    System.out.println("\n     YOU SELECTED: " + food.get_name() + ". CURRENT QUANTITY: "
-                            + food.get_quantity() + food.get_quantitityMeasure() + "\n");
-                    System.out.println("     1.Add quantity| 2.Delete quantity| 0.CLOSE QUANTITY CHANGE\n");
-                    System.out.print("     Enter choice: ");
-                    int choice = scanner.nextInt();
+        // SHOW THE FOOD CHOSEN
+        try (ResultSet result = executeTheQuery(query, foodId)) {
 
-                    // Check if the user wants to exit.
-                    if (choice == 0) {
-                        break;
-                    }
+            System.out.println("                                  \n                           FOOD CHOSEN\n\n");
+            System.out.printf("     %-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
 
-                    // Add quantity
-                    if (choice == 1) {
-                        System.out.print("     How many " + food.get_quantitityMeasure() + " to add: ");
-                        double quantityToAdd = scanner.nextDouble();
-                        food.add_quantity(quantityToAdd);
-                        System.out.println(
-                                "     CURRENT QUANTITY: " + food.get_quantity() + food.get_quantitityMeasure());
-                    }
+                System.out.printf("     %-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
 
-                    // Delete quantity
-                    else if (choice == 2) {
-                        System.out.print("     How many " + food.get_quantitityMeasure() + " to Delete: ");
-                        double quantityToDelete = scanner.nextDouble();
-                        food.delete_quantity(quantityToDelete);
-                        System.out.println(
-                                "     CURRENT QUANTITY: " + food.get_quantity() + food.get_quantitityMeasure());
-                    }
+                // CHANGE THE QUANTITY
+                System.out.println("\n\n     1.Add quantity| 2.Decrease quantity | 0.EXIT");
+                System.out.print("     Enter your choice: ");
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    break;
+                }
+
+                if (choice == 1) {
+                    System.out.print("     Enter the quantity to add: ");
+                    int addQuantity = scanner.nextInt();
+                    quantity = dataQuantity + addQuantity;
+                }
+
+                if (choice == 2) {
+                    System.out.print("     Enter the quantity to decrease: ");
+                    int decreaseQuantity = scanner.nextInt();
+                    quantity = dataQuantity - decreaseQuantity;
+                }
+
+                try {
+                    int updateResult = executeUpdate(changeQuantityQuery, quantity, foodId);
+                    System.out.println("     Now the quantity of " + dataName + " is: " + quantity + "g");
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    // =================================== CHANGE FOOD PRICE
-    // ===================================
-    public static void changeFoodPrice() {
-        System.out.println(
-                "-------------------------------------------------------------------------------------");
-        System.out.println("                               CHANGE PRICE FOOD\n\n");
+    // ========================= CHANGE FOOD PRICE =========================
+    public static void changeFoodPrice() throws ClassNotFoundException {
+        System.out.println("-------------------------------------------------------------------------------------");
+        System.out.println("                     CHANGE PRICE FOOD\n\n");
         System.out.print("     Enter the ID of the food item whose price you want to change: ");
+
         int foodId = scanner.nextInt();
+        double price = 0; // Initialize quantity
+        String query = "select * from food where id = ?";
+        String changePriceQuery = "update food set price = ? where id = ?";
 
-        // FIND FOOD ITEM
-        for (Food food : foodList) {
-            if (food.get_id() == foodId) {
-                while (true) {
-                    System.out.println("\n     YOU SELECTED: " + food.get_name() + ". CURRENT PRICE: "
-                            + food.get_price() + " $\n");
-                    System.out.println("     1.Change Price| 0.CLOSE QUANTITY CHANGE\n");
-                    System.out.print("     Enter choice: ");
-                    int choice = scanner.nextInt();
+        // SHOW THE FOOD CHOSEN
+        try (ResultSet result = executeTheQuery(query, foodId)) {
 
-                    // Check if the user wants to exit.
-                    if (choice == 0) {
-                        break;
-                    }
+            System.out.println("                                  \n                           FOOD CHOSEN\n\n");
+            System.out.printf("     %-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
 
-                    // Add quantity
-                    if (choice == 1) {
-                        System.out.print("     New price: ");
-                        double newPrice = scanner.nextDouble();
-                        food.change_price(newPrice);
-                        System.out.println(
-                                "     CURRENT PRICE: " + food.get_price());
-                    }
+                System.out.printf("     %-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
+
+                // CHANGE THE QUANTITY
+                System.out.println("\n\n     1.Set Price| 0.EXIT");
+                System.out.print("     Enter your choice: ");
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    break;
+                }
+
+                if (choice == 1) {
+                    System.out.print("     Enter the price to set: ");
+                    double setPrice = scanner.nextDouble();
+                    price = setPrice;
+                }
+
+                try {
+                    int updateResult = executeUpdate(changePriceQuery, price, foodId);
+                    System.out.println("     Now the price of " + dataName + " is: " + price + " $");
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    // =================================== DELETE FOOD
-    // ===================================
-    public static void deleteFood() {
-        System.out.println(
-                "-------------------------------------------------------------------------------------");
-        System.out.println("                                  DELETE FOOD\n\n");
+    // ========================= DELETE FOOD =========================
+    public static void deleteFood() throws ClassNotFoundException {
+        System.out.println("-------------------------------------------------------------------------------------");
+        System.out.println("                     DELETE FOOD\n\n");
         System.out.print("     Enter the ID of the food item that you want to delete: ");
+
         int foodId = scanner.nextInt();
+        String query = "select * from food where id = ?";
+        String deleteQuare = "delete from food where id = ?";
 
-        // FIND FOOD ITEM
-        for (Iterator<Food> iterator = foodList.iterator(); iterator.hasNext();) {
-            Food food = iterator.next();
-            if (food.get_id() == foodId) {
-                while (true) {
-                    System.out.println("\n     YOU SELECTED: " + food.get_name());
-                    System.out.println("     1.Delete item| 0.CLOSE DELETE FOOD\n");
-                    System.out.print("     Enter choice: ");
-                    int choice = scanner.nextInt();
+        // SHOW THE FOOD CHOSEN
+        try (ResultSet result = executeTheQuery(query, foodId)) {
 
-                    // Check if the user wants to exit.
-                    if (choice == 0) {
-                        break;
-                    }
+            System.out.println("                                  \n                           FOOD CHOSEN\n\n");
+            System.out.printf("     %-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
 
-                    // Change price
-                    if (choice == 1) {
-                        iterator.remove();
-                        break;
+                System.out.printf("     %-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
+
+                // CHANGE THE QUANTITY
+                System.out.println("\n\n     1.Delete Item| 0.EXIT");
+                System.out.print("     Enter your choice: ");
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    break;
+                }
+
+                if (choice == 1) {
+                    try {
+                        int updateResult = executeUpdate(deleteQuare, foodId);
+                        System.out.println("You deleted the " + dataName + " from database.");
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
                 }
+
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

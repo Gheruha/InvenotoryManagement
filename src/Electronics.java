@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Scanner;
 import java.sql.*; // SQL
 import java.util.logging.Level; // For errors.
@@ -16,171 +15,236 @@ public class Electronics extends Item {
     static PreparedStatement sqlPreparedStatement;
     static String output;
     static ResultSet result; // holds the result from SQL
-    
 
-    // ADD ELECTRONICS
-    public static void addElectronic() {
-        while (true) {
-            System.out.println(
-                    "-------------------------------------------------------------------------------------");
-            System.out.print("     Enter electronic ID (or -1 to stop): ");
-            int electronicId = scanner.nextInt();
+    // ========================= ADD ELECTRONICS =========================
 
-            // Check if the user wants to stop
-            if (electronicId == -1) {
-                break;
+    public static void addElectronic() throws ClassNotFoundException {
+        String insertElectronicQuery = "insert into electronics(id, name, quantity, price, quantityMeasure) values (? , ? , ? , ? , ?)";
+        String quantityMeasure = "pieces";
+        try {
+            while (true) {
+                System.out.println(
+                        "-------------------------------------------------------------------------------------");
+                System.out.print("     Enter electronic ID (or -1 to stop): ");
+                int electronicId = scanner.nextInt();
+
+                // Check if the user wants to stop
+                if (electronicId == -1) {
+                    break;
+                }
+
+                scanner.nextLine(); // Consume the newline character left by nextInt()
+                System.out.print("     Enter electronic name: ");
+                String electronicName = scanner.nextLine();
+                System.out.print("     Enter electronic quantity: ");
+                int quantity = scanner.nextInt();
+                System.out.print("     Enter electronic price: ");
+                double price = scanner.nextDouble();
+                scanner.nextLine(); // Consume the newline character left by nextDouble()
+
+                // Execute query and hold it in the resultSet variable
+
+                int result = executeUpdate(insertElectronicQuery, electronicId, electronicName, quantity, price,
+                        quantityMeasure);
+
+                if (result > 0) {
+                    System.out.println("     Electronic added successfully!");
+
+                } else {
+                    System.out.println("     Failed to add electronic.");
+                }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
-            scanner.nextLine(); // Consume the newline character left by nextInt()
+    }
 
-            System.out.print("     Enter electronic name: ");
-            String electronicName = scanner.nextLine();
+    // ========================= SEE ELECTRONICS =========================
+    public static void seeElectronics() throws SQLException, ClassNotFoundException {
+        String selectAll = "select * from electronics;";
 
-            System.out.print("     Enter quantity: ");
-            int quantity = scanner.nextInt();
+        System.out.println(
+                "-------------------------------------------------------------------------------------");
+        try (
+                ResultSet result = executeTheQuery(selectAll)) {
 
-            System.out.print("     Enter price: ");
-            double price = scanner.nextDouble();
+            System.out.println("                                  ELECTRONICS LIST\n\n");
+            System.out.printf("%-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
 
-            scanner.nextLine(); // Consume the newline character left by nextDouble()
-
-            // Create a new Food object using user input and add it to the list
-            Electronics electronic = new Electronics(electronicId, electronicName, quantity, price, "pieces");
-            electronicsList.add(electronic);
+                System.out.printf("%-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    // SEE ELECTRONICS
-    public static void seeElectronics() {
-        System.out.println(
-                "-------------------------------------------------------------------------------------");
-        System.out.println("                                  ELECTRONICS LIST\n\n");
-        for (Electronics electronic : electronicsList) {
-            System.out.println("     Electronic ID: " + electronic.get_id());
-            System.out.println("     Electronic Name: " + electronic.get_name());
-            System.out.println("     Quantity: " + electronic.get_quantity());
-            System.out.println("     Price: " + electronic.get_price() + "$");
-            System.out.println("     Quantity Measure: " + electronic.get_quantitityMeasure());
-            System.out.println(
-                    "-------------------------------------------------------------------------------------");
-        }
-    }
-
-    // CHANGE ELECTRONICS QUANTITY
-    public static void changeElectronicsQuantity() {
-        System.out.println(
-                "-------------------------------------------------------------------------------------");
-        System.out.println("                      CHANGE QUANTITY ELECTRONICS\n\n");
+    // ======================= CHANGE ELECTRONICS QUANTITY =======================
+    public static void changeElectronicsQuantity() throws ClassNotFoundException {
+        System.out.println("-------------------------------------------------------------------------------------");
+        System.out.println("                     CHANGE QUANTITY ELECTRONICS\n\n");
         System.out.print("     Enter the ID of the electronic item whose quantity you want to change: ");
+
         int electronicId = scanner.nextInt();
+        int quantity = 0; // Initialize quantity
+        String query = "select * from electronics where id = ?";
+        String changeQuantityQuery = "update electronics set quantity = ? where id = ?";
 
-        // FIND FOOD ITEM , ADD OR DELETE
-        for (Electronics electronic : electronicsList) {
-            if (electronic.get_id() == electronicId) {
-                while (true) {
-                    System.out.println("\n     YOU SELECTED: " + electronic.get_name() + ". CURRENT QUANTITY: "
-                            + electronic.get_quantity() + electronic.get_quantitityMeasure() + "\n");
-                    System.out.println("     1.Add quantity| 2.Delete quantity| 0.CLOSE QUANTITY CHANGE\n");
-                    System.out.print("     Enter choice: ");
-                    int choice = scanner.nextInt();
+        // SHOW THE FOOD CHOSEN
+        try (ResultSet result = executeTheQuery(query, electronicId)) {
 
-                    // Check if the user wants to exit.
-                    if (choice == 0) {
-                        break;
-                    }
+            System.out.println("                                  \n                           ELECTRONIC CHOSEN\n\n");
+            System.out.printf("     %-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
 
-                    // Add quantity
-                    if (choice == 1) {
-                        System.out.print("     How many " + electronic.get_quantitityMeasure() + " to add: ");
-                        double quantityToAdd = scanner.nextDouble();
-                        electronic.add_quantity(quantityToAdd);
-                        System.out.println(
-                                "     CURRENT QUANTITY: " + electronic.get_quantity()
-                                        + electronic.get_quantitityMeasure());
-                    }
+                System.out.printf("     %-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
 
-                    // Delete quantity
-                    else if (choice == 2) {
-                        System.out.print("     How many " + electronic.get_quantitityMeasure() + " to Delete: ");
-                        double quantityToDelete = scanner.nextDouble();
-                        electronic.delete_quantity(quantityToDelete);
-                        System.out.println(
-                                "     CURRENT QUANTITY: " + electronic.get_quantity()
-                                        + electronic.get_quantitityMeasure());
-                    }
+                // CHANGE THE QUANTITY
+                System.out.println("\n\n     1.Add quantity| 2.Decrease quantity | 0.EXIT");
+                System.out.print("     Enter your choice: ");
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    break;
+                }
+
+                if (choice == 1) {
+                    System.out.print("     Enter the quantity to add: ");
+                    int addQuantity = scanner.nextInt();
+                    quantity = dataQuantity + addQuantity;
+                }
+
+                if (choice == 2) {
+                    System.out.print("     Enter the quantity to decrease: ");
+                    int decreaseQuantity = scanner.nextInt();
+                    quantity = dataQuantity - decreaseQuantity;
+                }
+
+                try {
+                    int updateResult = executeUpdate(changeQuantityQuery, quantity, electronicId);
+                    System.out.println("     Now the quantity of " + dataName + " is: " + quantity + " pieces");
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    // CHANGE ELECTRONIC PRICE
-    public static void changeElectronicsPrice() {
-        System.out.println(
-                "-------------------------------------------------------------------------------------");
-        System.out.println("                             CHANGE PRICE ELECTRONICS\n\n");
-        System.out.print("     Enter the ID of the food item whose price you want to change: ");
+    // ========================= CHANGE ELECTRONICS PRICE =========================
+    public static void changeElectronicsPrice() throws ClassNotFoundException {
+        System.out.println("-------------------------------------------------------------------------------------");
+        System.out.println("                     CHANGE PRICE ELECTRONICS\n\n");
+        System.out.print("     Enter the ID of the electronic item whose price you want to change: ");
+
         int electronicId = scanner.nextInt();
+        double price = 0; // Initialize quantity
+        String query = "select * from electronics where id = ?";
+        String changePriceQuery = "update electronics set price = ? where id = ?";
 
-        // FIND ELECTRONIC ITEM
-        for (Electronics electronic : electronicsList) {
-            if (electronic.get_id() == electronicId) {
-                while (true) {
-                    System.out.println("\n     YOU SELECTED: " + electronic.get_name() + ". CURRENT PRICE: "
-                            + electronic.get_price() + " $\n");
-                    System.out.println("     1.Change Price| 0.CLOSE QUANTITY CHANGE\n");
-                    System.out.print("     Enter choice: ");
-                    int choice = scanner.nextInt();
+        // SHOW THE FOOD CHOSEN
+        try (ResultSet result = executeTheQuery(query, electronicId)) {
 
-                    // Check if the user wants to exit.
-                    if (choice == 0) {
-                        break;
-                    }
+            System.out.println("                                  \n                           ELECTRONIC CHOSEN\n\n");
+            System.out.printf("     %-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
 
-                    // Change price
-                    if (choice == 1) {
-                        System.out.print("     New price: ");
-                        double newPrice = scanner.nextDouble();
-                        electronic.change_price(newPrice);
-                        System.out.println(
-                                "     CURRENT PRICE: " + electronic.get_price());
-                    }
+                System.out.printf("     %-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
+
+                // CHANGE THE QUANTITY
+                System.out.println("\n\n     1.Set Price| 0.EXIT");
+                System.out.print("     Enter your choice: ");
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    break;
+                }
+
+                if (choice == 1) {
+                    System.out.print("     Enter the price to set: ");
+                    double setPrice = scanner.nextDouble();
+                    price = setPrice;
+                }
+
+                try {
+                    int updateResult = executeUpdate(changePriceQuery, price, electronicId);
+                    System.out.println("     Now the price of " + dataName + " is: " + price + " $");
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
-    // Iterator<Electronics> iterator =
-    // electronicsList.iterator();iterator.hasNext();
-    // Electronics electronic = iterator.next();
 
-    static void deleteElectronic() {
-        System.out.println(
-                "-------------------------------------------------------------------------------------");
-        System.out.println("                                  DELETE ELECTRONICS\n\n");
+    // ========================= DELETE FOOD =========================
+    public static void deleteElectronic() throws ClassNotFoundException {
+        System.out.println("-------------------------------------------------------------------------------------");
+        System.out.println("                     DELETE ELECTRONICS\n\n");
         System.out.print("     Enter the ID of the electronic item that you want to delete: ");
-        int foodId = scanner.nextInt();
 
-        // FIND FOOD ITEM
-        for (Iterator<Electronics> iterator = electronicsList.iterator(); iterator.hasNext();) {
-            Electronics electronic = iterator.next();
-            if (electronic.get_id() == foodId) {
-                while (true) {
-                    System.out.println("\n     YOU SELECTED: " + electronic.get_name());
-                    System.out.println("     1.Delete item| 0.CLOSE DELETE FOOD\n");
-                    System.out.print("     Enter choice: ");
-                    int choice = scanner.nextInt();
+        int electronicId = scanner.nextInt();
+        String query = "select * from electronics where id = ?";
+        String deleteQuare = "delete from electronics where id = ?";
 
-                    // Check if the user wants to exit.
-                    if (choice == 0) {
-                        break;
-                    }
+        // SHOW THE FOOD CHOSEN
+        try (ResultSet result = executeTheQuery(query, electronicId)) {
 
-                    // Change price
-                    if (choice == 1) {
-                        iterator.remove();
-                        break;
+            System.out.println("                                  \n                           ELECTRONIC CHOSEN\n\n");
+            System.out.printf("     %-5s%-20s%-10s%-10s%-15s\n", "ID", "NAME", "QUANTITY", "PRICE", "MEASURE");
+            while (result.next()) {
+                int dataId = result.getInt("id");
+                String dataName = result.getString("name");
+                int dataQuantity = result.getInt("quantity");
+                double dataPrice = result.getInt("price");
+                String dataQuantityMeasure = result.getString("quantityMeasure");
+
+                System.out.printf("     %-5d%-20s%-10d%-10.2f%-15s\n", dataId, dataName, dataQuantity, dataPrice,
+                        dataQuantityMeasure);
+
+                // CHANGE THE QUANTITY
+                System.out.println("\n\n     1.Delete Item| 0.EXIT");
+                System.out.print("     Enter your choice: ");
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    break;
+                }
+
+                if (choice == 1) {
+                    try {
+                        int updateResult = executeUpdate(deleteQuare, electronicId);
+                        System.out.println("You deleted the " + dataName + " from database.");
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
                 }
+
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
+
 }
